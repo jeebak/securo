@@ -1,0 +1,27 @@
+# Serve Securo's web UI through the existing htpc nginx-proxy so the LAN login is HTTPS.
+# The proxy finds this container via VIRTUAL_HOST and reuses its wildcard cert for
+# 192-168-50-2.sslip.io. Loaded through COMPOSE_FILE in .env, which turns off Compose's
+# automatic docker-compose.override.yml pickup.
+services:
+  frontend:
+    # LAN access goes through the proxy only; the prod file publishes FRONTEND_PORT otherwise.
+    ports: !reset []
+    environment:
+      FRONTEND_URL: https://securo.192-168-50-2.sslip.io
+      VIRTUAL_HOST: securo.192-168-50-2.sslip.io
+      # nginx-proxy needs the port explicitly; the image's own nginx listens on 8080.
+      VIRTUAL_PORT: "8080"
+    networks:
+      - default
+      - htpc
+  backend:
+    environment:
+      FRONTEND_URL: https://securo.192-168-50-2.sslip.io
+      # Two reverse proxies now sit in front of the API (nginx-proxy, then the bundled
+      # frontend nginx); one hop would key rate limits on the proxy's address.
+      TRUSTED_PROXY_HOPS: "2"
+
+networks:
+  htpc:
+    name: docker-htpc_default
+    external: true
