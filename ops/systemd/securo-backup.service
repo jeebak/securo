@@ -1,0 +1,8 @@
+[Unit]
+Description=Securo backup (pg_dump + attachments/agent_knowledge volumes + config)
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/Projects/repos/Financial/github.com/securo
+ExecStart=%h/Projects/repos/Financial/github.com/securo/ops/backup.sh
