@@ -4,5 +4,5 @@ After=docker.service
 
 [Service]
 Type=oneshot
-WorkingDirectory=%h/Projects/repos/Financial/github.com/securo
-ExecStart=%h/Projects/repos/Financial/github.com/securo/ops/backup.sh
+WorkingDirectory=%h/Projects/repos/Financial/github.com/jeebak/securo
+ExecStart=%h/Projects/repos/Financial/github.com/jeebak/securo/ops/backup.sh
