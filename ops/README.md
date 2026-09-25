@@ -26,14 +26,16 @@ isn't accidentally excluded/included by this repo's own `.gitignore`). One
 timestamped subdirectory per run. Anything older than `$SECURO_BACKUP_RETENTION_DAYS`
 (default 7) is pruned automatically.
 
-Each run's `$DEST` also syncs to S3 (`s3://jeebak-securo-backups/<timestamp>/`,
+Each run's `$DEST` also syncs to S3 (`s3://$SECURO_BACKUP_S3_BUCKET/<timestamp>/`,
 `AWS_PROFILE=securo-backup` — a dedicated IAM user scoped to only
 `PutObject`/`GetObject`/`ListBucket` on that one bucket, no `DeleteObject`, so
 a leaked key can't be used to wipe existing backups). The bucket has its own
 independent lifecycle rule (90-day expiration, 14-day noncurrent-version
 expiration on top of versioning) — remote retention isn't tied to
-`$SECURO_BACKUP_RETENTION_DAYS`. Override the bucket/profile via
-`$SECURO_BACKUP_S3_BUCKET`/`$SECURO_BACKUP_S3_PROFILE`. A sync failure logs an
+`$SECURO_BACKUP_RETENTION_DAYS`. The bucket name is personal config, so it is
+read from `${XDG_CONFIG_HOME:-~/.config}/securo/backup.env`
+(`SECURO_BACKUP_S3_BUCKET=...`); an empty value skips the sync and an unset one
+fails the run. Override the profile via `$SECURO_BACKUP_S3_PROFILE`. A sync failure logs an
 ERROR and the script exits 1 after the local backup and pruning have finished,
 so the unit shows up in `systemctl --user --failed`. The local backup that run
 produced is still good, but that run has no off-host copy until the next one

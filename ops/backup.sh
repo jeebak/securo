@@ -4,7 +4,7 @@
 # and doesn't require quiescing the app, since pg_dump takes a consistent
 # MVCC snapshot against a live database), the attachments and agent_knowledge
 # volumes, and the .env/secrets/ config that would otherwise mean relinking
-# every SimpleFIN/Truthifi connection from scratch. Skips the
+# every SimpleFIN connection from scratch. Skips the
 # agent_embedding_models volume deliberately -- it's a re-downloadable ONNX
 # model cache, not user data.
 #
@@ -58,15 +58,25 @@ echo "[$STAMP] Backup complete: $DEST ($SIZE)"
 
 # AWS_CA_BUNDLE is set globally on this host to a path that doesn't exist,
 # which breaks the CLI's SSL validation -- unset it just for this call.
-S3_BUCKET="${SECURO_BACKUP_S3_BUCKET:-jeebak-securo-backups}"
+# The bucket name is personal config, kept out of this (public) repo: set
+# SECURO_BACKUP_S3_BUCKET in ${XDG_CONFIG_HOME:-~/.config}/securo/backup.env, or export it. An
+# explicitly empty value skips the sync; an unset one fails the run.
+CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/securo/backup.env"
+[[ -f "$CONFIG" ]] && source "$CONFIG"
+S3_BUCKET="${SECURO_BACKUP_S3_BUCKET-__unset__}"
 S3_PROFILE="${SECURO_BACKUP_S3_PROFILE:-securo-backup}"
-echo "[$STAMP] Syncing to s3://$S3_BUCKET/$STAMP/..."
 SYNC_OK=1
-if env -u AWS_CA_BUNDLE aws s3 sync "$DEST" "s3://$S3_BUCKET/$STAMP/" --profile "$S3_PROFILE"; then
-  echo "[$STAMP] Off-host copy complete."
-else
+if [[ "$S3_BUCKET" == "__unset__" ]]; then
   SYNC_OK=0
-  echo "[$STAMP] ERROR: S3 sync failed -- local backup is still good, but this run has no off-host copy." >&2
+  echo "[$STAMP] ERROR: SECURO_BACKUP_S3_BUCKET is not set (see $CONFIG) -- no off-host copy for this run." >&2
+elif [[ -n "$S3_BUCKET" ]]; then
+  echo "[$STAMP] Syncing to s3://$S3_BUCKET/$STAMP/..."
+  if env -u AWS_CA_BUNDLE aws s3 sync "$DEST" "s3://$S3_BUCKET/$STAMP/" --profile "$S3_PROFILE"; then
+    echo "[$STAMP] Off-host copy complete."
+  else
+    SYNC_OK=0
+    echo "[$STAMP] ERROR: S3 sync failed -- local backup is still good, but this run has no off-host copy." >&2
+  fi
 fi
 
 echo "[$STAMP] Pruning backups older than ${RETENTION_DAYS}d..."
