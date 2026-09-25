@@ -20,8 +20,8 @@
 set -euo pipefail
 
 COMPOSE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BACKUP_ROOT="${SECURO_BACKUP_ROOT:-$HOME/Projects/repos/Financial/github.com/securo-backups}"
-RETENTION_DAYS="${SECURO_BACKUP_RETENTION_DAYS:-30}"
+BACKUP_ROOT="${SECURO_BACKUP_ROOT:-${XDG_DATA_HOME:-$HOME/.local/share}/backups/securo}"
+RETENTION_DAYS="${SECURO_BACKUP_RETENTION_DAYS:-7}"
 STAMP="$(date +%Y-%m-%dT%H-%M-%S)"
 DEST="$BACKUP_ROOT/$STAMP"
 
@@ -61,13 +61,18 @@ echo "[$STAMP] Backup complete: $DEST ($SIZE)"
 S3_BUCKET="${SECURO_BACKUP_S3_BUCKET:-jeebak-securo-backups}"
 S3_PROFILE="${SECURO_BACKUP_S3_PROFILE:-securo-backup}"
 echo "[$STAMP] Syncing to s3://$S3_BUCKET/$STAMP/..."
+SYNC_OK=1
 if env -u AWS_CA_BUNDLE aws s3 sync "$DEST" "s3://$S3_BUCKET/$STAMP/" --profile "$S3_PROFILE"; then
   echo "[$STAMP] Off-host copy complete."
 else
-  echo "[$STAMP] WARNING: S3 sync failed -- local backup is still good, but this run has no off-host copy. Investigate before relying on it." >&2
+  SYNC_OK=0
+  echo "[$STAMP] ERROR: S3 sync failed -- local backup is still good, but this run has no off-host copy." >&2
 fi
 
 echo "[$STAMP] Pruning backups older than ${RETENTION_DAYS}d..."
 find "$BACKUP_ROOT" -maxdepth 1 -mindepth 1 -type d -mtime "+${RETENTION_DAYS}" -print -exec rm -rf {} \;
 
 echo "[$STAMP] Done."
+# Fail the unit (after the local backup and pruning finished) so a missing
+# off-host copy shows up in `systemctl --user --failed`, not only in the log.
+[[ $SYNC_OK == 1 ]] || exit 1

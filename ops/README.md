@@ -20,11 +20,11 @@ re-downloadable ONNX model cache, not user data.
 
 ## Where backups go
 
-`$SECURO_BACKUP_ROOT`, default `~/Projects/repos/Financial/github.com/securo-backups`
-— a sibling of this clone, not inside it (so it survives a `git clean` and
+`$SECURO_BACKUP_ROOT`, default `${XDG_DATA_HOME:-~/.local/share}/backups/securo`
+— outside this clone (so it survives a `git clean` and
 isn't accidentally excluded/included by this repo's own `.gitignore`). One
 timestamped subdirectory per run. Anything older than `$SECURO_BACKUP_RETENTION_DAYS`
-(default 30) is pruned automatically.
+(default 7) is pruned automatically.
 
 Each run's `$DEST` also syncs to S3 (`s3://jeebak-securo-backups/<timestamp>/`,
 `AWS_PROFILE=securo-backup` — a dedicated IAM user scoped to only
@@ -33,10 +33,13 @@ a leaked key can't be used to wipe existing backups). The bucket has its own
 independent lifecycle rule (90-day expiration, 14-day noncurrent-version
 expiration on top of versioning) — remote retention isn't tied to
 `$SECURO_BACKUP_RETENTION_DAYS`. Override the bucket/profile via
-`$SECURO_BACKUP_S3_BUCKET`/`$SECURO_BACKUP_S3_PROFILE`. A sync failure logs a
-warning and exits the script cleanly rather than failing the run — the local
-backup that run produced is still good, but check `journalctl` if you see the
-warning, since that run has no off-host copy until the next one succeeds.
+`$SECURO_BACKUP_S3_BUCKET`/`$SECURO_BACKUP_S3_PROFILE`. A sync failure logs an
+ERROR and the script exits 1 after the local backup and pruning have finished,
+so the unit shows up in `systemctl --user --failed`. The local backup that run
+produced is still good, but that run has no off-host copy until the next one
+succeeds. The unit sets `Environment=PATH=...` to include mise's awscli
+install, because systemd's default user PATH lacks `aws` and, without it,
+every timer run fails the sync.
 
 ## Running it
 
@@ -62,7 +65,7 @@ journalctl --user -u securo-backup.service          # check a run's output
 ## Restoring
 
 ```
-ops/restore.sh /path/to/securo-backups/<timestamp>
+ops/restore.sh ~/.local/share/backups/securo/<timestamp>
 ```
 
 Destructive — drops and recreates the `securo` database, so it prompts for

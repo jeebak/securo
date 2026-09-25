@@ -3,7 +3,7 @@
 # database -- run manually only, never on a timer, and confirm you're
 # pointed at the right stack before typing "restore".
 #
-# Usage: ops/restore.sh /path/to/securo-backups/<timestamp>
+# Usage: ops/restore.sh ~/.local/share/backups/securo/<timestamp>
 set -euo pipefail
 
 COMPOSE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

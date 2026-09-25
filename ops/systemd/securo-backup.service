@@ -5,4 +5,7 @@ After=docker.service
 [Service]
 Type=oneshot
 WorkingDirectory=%h/Projects/repos/Financial/github.com/jeebak/securo
+# aws is a mise install, which systemd's default user PATH does not include;
+# without this the S3 sync fails and backup.sh only logs a warning.
+Environment=PATH=%h/.local/share/mise/installs/awscli/latest/bin:/usr/local/bin:/usr/bin:/bin
 ExecStart=%h/Projects/repos/Financial/github.com/jeebak/securo/ops/backup.sh
