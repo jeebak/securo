@@ -1,0 +1,30 @@
+# Optional overlay: serve Securo's web UI through an existing nginx-proxy
+# (https://github.com/nginx-proxy/nginx-proxy) container so logins use HTTPS.
+# The proxy finds this container via VIRTUAL_HOST. Set both in .env (gitignored):
+#   SECURO_PROXY_HOST     the full hostname the proxy serves, e.g. securo.example.com
+#   SECURO_PROXY_NETWORK  the name of the existing Docker network the proxy is on
+# Load it through COMPOSE_FILE in .env, which turns off Compose's automatic
+# docker-compose.override.yml pickup.
+services:
+  frontend:
+    # Access goes through the proxy only; the prod file publishes FRONTEND_PORT otherwise.
+    ports: !reset []
+    environment:
+      FRONTEND_URL: https://${SECURO_PROXY_HOST:?set SECURO_PROXY_HOST in .env}
+      VIRTUAL_HOST: ${SECURO_PROXY_HOST:?set SECURO_PROXY_HOST in .env}
+      # nginx-proxy needs the port explicitly; the image's own nginx listens on 8080.
+      VIRTUAL_PORT: "8080"
+    networks:
+      - default
+      - proxy
+  backend:
+    environment:
+      FRONTEND_URL: https://${SECURO_PROXY_HOST:?set SECURO_PROXY_HOST in .env}
+      # Two reverse proxies sit in front of the API (nginx-proxy, then the bundled
+      # frontend nginx); one hop would key rate limits on the proxy's address.
+      TRUSTED_PROXY_HOPS: "2"
+
+networks:
+  proxy:
+    name: ${SECURO_PROXY_NETWORK:?set SECURO_PROXY_NETWORK in .env}
+    external: true
