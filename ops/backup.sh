@@ -65,13 +65,15 @@ CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/securo/backup.env"
 [[ -f "$CONFIG" ]] && source "$CONFIG"
 S3_BUCKET="${SECURO_BACKUP_S3_BUCKET-__unset__}"
 S3_PROFILE="${SECURO_BACKUP_S3_PROFILE:-s3-backup}"
+# A shared backup bucket keeps every service under its own prefix.
+S3_PREFIX="${SECURO_BACKUP_S3_PREFIX:-securo}"
 SYNC_OK=1
 if [[ "$S3_BUCKET" == "__unset__" ]]; then
   SYNC_OK=0
   echo "[$STAMP] ERROR: SECURO_BACKUP_S3_BUCKET is not set (see $CONFIG) -- no off-host copy for this run." >&2
 elif [[ -n "$S3_BUCKET" ]]; then
-  echo "[$STAMP] Syncing to s3://$S3_BUCKET/$STAMP/..."
-  if env -u AWS_CA_BUNDLE aws s3 sync "$DEST" "s3://$S3_BUCKET/$STAMP/" --profile "$S3_PROFILE"; then
+  echo "[$STAMP] Syncing to s3://$S3_BUCKET/$S3_PREFIX/$STAMP/..."
+  if env -u AWS_CA_BUNDLE aws s3 sync "$DEST" "s3://$S3_BUCKET/$S3_PREFIX/$STAMP/" --profile "$S3_PROFILE"; then
     echo "[$STAMP] Off-host copy complete."
   else
     SYNC_OK=0
