@@ -26,7 +26,8 @@ isn't accidentally excluded/included by this repo's own `.gitignore`). One
 timestamped subdirectory per run. Anything older than `$SECURO_BACKUP_RETENTION_DAYS`
 (default 7) is pruned automatically.
 
-Each run's `$DEST` also syncs to S3 (`s3://$SECURO_BACKUP_S3_BUCKET/<timestamp>/`,
+Each run's `$DEST` also syncs to S3 (`s3://$SECURO_BACKUP_S3_BUCKET/$SECURO_BACKUP_S3_PREFIX/<timestamp>/`,
+prefix defaulting to `securo` so a bucket can be shared across services, using
 the AWS profile in `$SECURO_BACKUP_S3_PROFILE` (default `s3-backup`) — an IAM user scoped to only
 `PutObject`/`GetObject`/`ListBucket` on that one bucket, no `DeleteObject`, so
 a leaked key can't be used to wipe existing backups). The bucket has its own
