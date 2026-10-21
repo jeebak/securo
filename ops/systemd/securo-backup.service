@@ -6,7 +6,7 @@ After=docker.service
 Type=oneshot
 # Point WorkingDirectory and ExecStart at your Securo clone.
 WorkingDirectory=%h/securo
-# aws is a mise install, which systemd's default user PATH does not include;
+# aws lives in /opt/linuxbrew/bin, which systemd's default user PATH does not include;
 # without this the S3 sync fails and backup.sh only logs a warning.
-Environment=PATH=%h/.local/share/mise/installs/awscli/latest/bin:/usr/local/bin:/usr/bin:/bin
+Environment=PATH=/opt/linuxbrew/bin:/usr/local/bin:/usr/bin:/bin
 ExecStart=%h/securo/ops/backup.sh

@@ -40,8 +40,8 @@ fails the run. A sync failure logs an
 ERROR and the script exits 1 after the local backup and pruning have finished,
 so the unit shows up in `systemctl --user --failed`. The local backup that run
 produced is still good, but that run has no off-host copy until the next one
-succeeds. The unit sets `Environment=PATH=...` to include mise's awscli
-install, because systemd's default user PATH lacks `aws` and, without it,
+succeeds. The unit sets `Environment=PATH=...` to include Homebrew's
+`/opt/linuxbrew/bin`, because systemd's default user PATH lacks `aws` and, without it,
 every timer run fails the sync.
 
 ## Running it
